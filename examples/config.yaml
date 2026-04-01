@@ -1,0 +1,34 @@
+# Example: Custom pipeline for stc-guardian
+#
+# Place this file at .stc/config.yaml in your project root.
+# If no config.yaml exists, the default STC pipeline is used.
+
+pipeline:
+  name: my-workflow
+  phases:
+    # Required phase — cannot be skipped
+    - name: design
+      required: true
+
+    # Optional phase — can be skipped with skip_reason
+    - name: review
+      required: false
+
+    # Required phase
+    - name: implement
+      required: true
+
+    # Satisfiable phase — can be satisfied with evidence
+    # instead of actually doing it (e.g., "tests already exist")
+    - name: test
+      required: true
+      satisfiable: true
+      satisfy_min_length: 50  # minimum chars for evidence
+
+    # Verify gate — hard block until verify_checklist passes
+    - name: qa
+      required: true
+
+    # Terminal phase — last step, triggers step cycling
+    - name: ship
+      terminal: true
