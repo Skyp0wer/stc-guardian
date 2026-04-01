@@ -250,7 +250,7 @@ export class PhaseEngine {
       code: 'ДЕЙСТВИЕ: Напиши код → phase_advance. НЕ КОММИТЬ без прохождения verify!',
       verify: verifyPassed
         ? 'ДЕЙСТВИЕ: Verify пройден → phase_advance'
-        : 'ДЕЙСТВИЕ: Запусти ПАРАЛЛЕЛЬНО: @code-reviewer + @security-guard + /codex-review → verify_checklist с результатами → phase_advance',
+        : 'ДЕЙСТВИЕ: Запусти ПАРАЛЛЕЛЬНО: @code-reviewer + @security-guard → verify_checklist с результатами → phase_advance',
       commit: 'ДЕЙСТВИЕ: git commit → phase_advance',
       // SCD-Debate pipeline
       setup: 'ДЕЙСТВИЕ: Подготовь тему и контекст дебатов → phase_advance',
