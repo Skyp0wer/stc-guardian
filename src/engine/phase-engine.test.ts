@@ -172,7 +172,8 @@ describe('phase-engine', () => {
         s.active_feature = 'my-feature'
       })
 
-      const result = engine.advance({ skip_reason: 'багфикс, clarify не нужен' })
+      const skipReason = 'Багфикс — clarify не нужен, задача описана в спеке полностью и однозначно'
+      const result = engine.advance({ skip_reason: skipReason })
 
       expect(result.action).toBe('skipped')
       expect(result.previous_phase).toBe('clarify')
@@ -182,7 +183,7 @@ describe('phase-engine', () => {
       const state = stateManager.getState()
       const feature = state.features['my-feature']
       expect(feature.phases_skipped['clarify']).toBeDefined()
-      expect(feature.phases_skipped['clarify'].reason).toBe('багфикс, clarify не нужен')
+      expect(feature.phases_skipped['clarify'].reason).toBe(skipReason)
     })
 
     it('skip логирует причину в audit log', () => {
@@ -191,11 +192,12 @@ describe('phase-engine', () => {
         s.active_feature = 'my-feature'
       })
 
-      engine.advance({ skip_reason: 'не нужен' })
+      const skipReason = 'Clarify не нужен — спека детализирована, вопросов нет, всё однозначно'
+      engine.advance({ skip_reason: skipReason })
 
       const events = auditLogger.getEvents()
       expect(events[0].action).toBe('phase_skip')
-      expect(events[0].details).toHaveProperty('reason', 'не нужен')
+      expect(events[0].details).toHaveProperty('reason', skipReason)
     })
 
     // EC-3: Skip required фазы → ошибка
@@ -209,7 +211,7 @@ describe('phase-engine', () => {
       })
 
       expect(() => {
-        engine.advance({ skip_reason: 'хочу пропустить' })
+        engine.advance({ skip_reason: 'Хочу пропустить verify — мне лень запускать ревью и проверки' })
       }).toThrow(/обязательна|required/i)
     })
 
@@ -218,12 +220,13 @@ describe('phase-engine', () => {
       stateManager.updateState(s => {
         s.features['my-feature'] = createFeature({
           current_phase: 'test', // satisfiable: true
+          total_steps: 0, // single-step — satisfy допустим
           phases_completed: ['specify', 'clarify', 'plan'],
         })
         s.active_feature = 'my-feature'
       })
 
-      const result = engine.advance({ satisfy_evidence: 'Existing tests in tests/feature.test.ts fully cover all scenarios for this step' })
+      const result = engine.advance({ satisfy_evidence: 'Existing tests in tests/feature.test.ts fully cover all scenarios for this step. Проверено: 12 тестов покрывают create/update/delete/list use cases. Новых use cases в этом шаге нет — только конфиг и типы. Тестировать нечего.' })
 
       expect(result.action).toBe('satisfied')
       expect(result.previous_phase).toBe('test')
@@ -296,7 +299,7 @@ describe('phase-engine', () => {
       expect(result.current_phase).toBe('clarify')
 
       // clarify → plan (skip)
-      result = engine.advance({ skip_reason: 'не нужен' })
+      result = engine.advance({ skip_reason: 'Clarify не нужен — спека полностью описывает задачу, вопросов нет' })
       expect(result.current_phase).toBe('plan')
 
       // plan → test
@@ -304,7 +307,7 @@ describe('phase-engine', () => {
       expect(result.current_phase).toBe('test')
 
       // test → code (satisfy)
-      result = engine.advance({ satisfy_evidence: 'Tests already exist in test suite and cover all scenarios for this config-only step' })
+      result = engine.advance({ satisfy_evidence: 'Tests already exist in test suite and cover all scenarios for this config-only step. Проверено: тесты в tests/feature.test.ts покрывают все use cases (12 тестов). Этот шаг — только конфиг и типы, новой логики нет.' })
       expect(result.current_phase).toBe('code')
 
       // code → verify
@@ -404,7 +407,7 @@ describe('phase-engine', () => {
       })
 
       expect(() => {
-        engine.advance({ skip_reason: 'причина', satisfy_evidence: 'evidence' })
+        engine.advance({ skip_reason: 'Причина пропуска — подробное описание почему фаза не нужна в этот раз', satisfy_evidence: 'Evidence — подробное описание почему тесты не нужны, файлы перечислены, логика описана, всё объяснено' })
       }).toThrow(/одновременно/i)
     })
   })

@@ -105,9 +105,17 @@ export class PhaseEngine {
       throw new Error('Нельзя указать skip_reason и satisfy_evidence одновременно')
     }
 
+    const MIN_SKIP_REASON_LENGTH = 50
+
     if (isSkip) {
       if (params.skip_reason!.length === 0) {
         throw new Error('skip_reason не может быть пустым — укажите причину пропуска')
+      }
+      if (params.skip_reason!.length < MIN_SKIP_REASON_LENGTH) {
+        throw new Error(
+          `skip_reason слишком короткий (${params.skip_reason!.length} символов, мин. ${MIN_SKIP_REASON_LENGTH}). ` +
+          `Объясните подробно почему фаза не нужна.`,
+        )
       }
       if (params.skip_reason!.length > MAX_TEXT_LENGTH) {
         throw new Error(`skip_reason слишком длинный (макс ${MAX_TEXT_LENGTH} символов)`)
@@ -126,6 +134,13 @@ export class PhaseEngine {
       }
       if (!phaseConfig.satisfiable) {
         throw new Error(`Фаза "${currentPhase}" не поддерживает satisfy — только обычный advance`)
+      }
+      // v1.1: satisfy запрещён на test если задача разбита на шаги (multi-step = нетривиальная задача)
+      if (currentPhase === 'test' && feature.total_steps > 1) {
+        throw new Error(
+          `Фаза "test" не может быть satisfy при multi-step (${feature.total_steps} шагов). ` +
+          `Задача нетривиальная — напиши тесты. Satisfy допустим только для single-step задач.`,
+        )
       }
       // Минимальная длина satisfy_evidence для guarded фаз (test)
       if (phaseConfig.satisfy_min_length && params.satisfy_evidence!.length < phaseConfig.satisfy_min_length) {

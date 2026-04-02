@@ -147,7 +147,7 @@ describe('guardian MCP server', () => {
     const { client } = await setupServer(tmpDir)
     const result = await client.callTool({
       name: 'phase_advance',
-      arguments: { skip_reason: 'не нужен' },
+      arguments: { skip_reason: 'Clarify не нужен — спека полностью описывает задачу, вопросов нет' },
     })
     const parsed = JSON.parse((result.content as Array<{ text: string }>)[0].text)
 
@@ -355,17 +355,20 @@ describe('guardian MCP server', () => {
     // specify → clarify
     await client.callTool({ name: 'phase_advance', arguments: {} })
     // clarify → plan (skip)
-    await client.callTool({ name: 'phase_advance', arguments: { skip_reason: 'не нужен' } })
+    await client.callTool({ name: 'phase_advance', arguments: { skip_reason: 'Clarify не нужен — спека полностью описывает задачу, вопросов нет' } })
     // plan → test
     await client.callTool({ name: 'phase_advance', arguments: {} })
     // test → code (satisfy)
-    await client.callTool({ name: 'phase_advance', arguments: { satisfy_evidence: 'Tests already exist in test suite and fully cover all business logic for this step' } })
+    await client.callTool({ name: 'phase_advance', arguments: { satisfy_evidence: 'Tests already exist in test suite and fully cover all business logic for this step. Проверено: 12 тестов в tests/feature.test.ts покрывают create/update/delete/list. Этот шаг — только конфиг и типы, новой тестируемой логики нет.' } })
     // code → verify
     await client.callTool({ name: 'phase_advance', arguments: {} })
     // verify: сначала verify_checklist (hard gate v0.5)
     await client.callTool({
       name: 'verify_checklist',
-      arguments: { code_review: { status: 'passed', summary: 'E2E тест — код проверен, всё ок' } },
+      arguments: {
+        code_review: { status: 'passed', summary: 'E2E тест — проверено 5 файлов, багов не найдено' },
+        security_check: { status: 'passed', summary: 'Секретов и инъекций не найдено, deps чистые' },
+      },
     })
     // verify → commit
     await client.callTool({ name: 'phase_advance', arguments: {} })

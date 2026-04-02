@@ -12,7 +12,7 @@ const configWithTestGuard: GuardianConfig = {
     name: 'stc',
     phases: [
       { name: 'specify', required: true },
-      { name: 'test', required: true, satisfiable: true, satisfy_min_length: 50 },
+      { name: 'test', required: true, satisfiable: true, satisfy_min_length: 200 },
       { name: 'code', required: true },
       { name: 'commit', terminal: true },
     ],
@@ -59,7 +59,7 @@ describe('test guard: test фаза required + satisfiable', () => {
     createFeature(sm, 'feat', 'test')
 
     expect(() => {
-      engine.advance({ skip_reason: 'не хочу писать тесты' })
+      engine.advance({ skip_reason: 'Не хочу писать тесты — это слишком долго и вообще лень делать' })
     }).toThrow(/обязательна.*required.*skip невозможен/)
   })
 
@@ -76,39 +76,39 @@ describe('test guard: test фаза required + satisfiable', () => {
 
     expect(() => {
       engine.advance({ satisfy_evidence: 'нечего тестировать' })
-    }).toThrow(/мин\. 50 символов/)
+    }).toThrow(/мин\. 200 символов/)
   })
 
   it('satisfy test с подробным evidence → ок', () => {
     createFeature(sm, 'feat', 'test')
 
-    const evidence = 'Изменены только файлы конфигурации: stc.yaml, .env.example. Бизнес-логики нет, тестировать нечего.'
+    const evidence = 'Изменены только файлы конфигурации: stc.yaml, .env.example. Бизнес-логики нет, тестировать нечего. Файл stc.yaml — YAML конфиг с именами фаз, .env.example — шаблон переменных окружения. Оба не содержат кода, только декларативные данные. Существующие тесты покрывают парсинг конфига.'
     const result = engine.advance({ satisfy_evidence: evidence })
 
     expect(result.action).toBe('satisfied')
     expect(result.current_phase).toBe('code')
   })
 
-  it('satisfy test ровно 50 символов → ок', () => {
+  it('satisfy test ровно 200 символов → ок', () => {
     createFeature(sm, 'feat', 'test')
 
-    // Ровно 50 символов
-    const evidence = '12345678901234567890123456789012345678901234567890'
-    expect(evidence.length).toBe(50)
+    // Ровно 200 символов
+    const evidence = 'A'.repeat(200)
+    expect(evidence.length).toBe(200)
 
     const result = engine.advance({ satisfy_evidence: evidence })
     expect(result.action).toBe('satisfied')
   })
 
-  it('satisfy test 49 символов → ошибка', () => {
+  it('satisfy test 199 символов → ошибка', () => {
     createFeature(sm, 'feat', 'test')
 
-    const evidence = '1234567890123456789012345678901234567890123456789'
-    expect(evidence.length).toBe(49)
+    const evidence = 'A'.repeat(199)
+    expect(evidence.length).toBe(199)
 
     expect(() => {
       engine.advance({ satisfy_evidence: evidence })
-    }).toThrow(/мин\. 50 символов/)
+    }).toThrow(/мин\. 200 символов/)
   })
 
   it('action_required для test содержит предупреждение о skip', () => {

@@ -89,10 +89,27 @@ describe('v0.5: verify_checklist с agent results', () => {
     const result = checker.check()
 
     expect(result.ready).toBe(false)
-    expect(result.missing_evidence[0]).toContain('code_review')
+    expect(result.missing_evidence.some(m => m.includes('code_review'))).toBe(true)
+    expect(result.missing_evidence.some(m => m.includes('security_check'))).toBe(true)
 
     const state = stateManager.getState()
     expect(state.features['feat'].verify_passed).toBe(false)
+  })
+
+  // NEW: без security_check → failed
+  it('без security_check → incomplete', () => {
+    const { stateManager, checker } = setup()
+    stateManager.updateState(s => {
+      s.features['feat'] = createFeature()
+      s.active_feature = 'feat'
+    })
+
+    const result = checker.check({
+      code_review: PASSED_REVIEW,
+    })
+
+    expect(result.ready).toBe(false)
+    expect(result.missing_evidence.some(m => m.includes('security_check'))).toBe(true)
   })
 
   // TS-14: security skip с причиной
@@ -193,6 +210,7 @@ describe('v0.5: verify_checklist с agent results', () => {
 
     const result = checker.check({
       code_review: PASSED_REVIEW,
+      security_check: PASSED_REVIEW,
     })
 
     expect(result.ready).toBe(true) // warning, не блок

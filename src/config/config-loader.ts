@@ -10,7 +10,7 @@ const STC_PIPELINE: PipelineConfig = {
     { name: 'specify', required: true },
     { name: 'clarify', required: false },
     { name: 'plan', required: false },
-    { name: 'test', required: true, satisfiable: true, satisfy_min_length: 50 },
+    { name: 'test', required: true, satisfiable: true, satisfy_min_length: 200 },
     { name: 'code', required: true },
     { name: 'verify', required: true },
     { name: 'commit', terminal: true },

@@ -57,7 +57,9 @@ export class VerifyChecker {
       this.checkAgent('code_review', input.code_review, failed, warnings)
     }
 
-    if (input?.security_check) {
+    if (!input || !input.security_check) {
+      missing.push('security_check не предоставлен — запусти @security-guard')
+    } else {
       this.checkAgent('security_check', input.security_check, failed, warnings)
     }
 
