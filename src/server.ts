@@ -142,16 +142,14 @@ export function createGuardianServer(projectDir: string): McpServer {
       code_review: agentResultSchema.optional().describe('Результат code review: passed | passed_with_notes | failed | { skipped: "причина" }'),
       security_check: agentResultSchema.optional().describe('Результат security check'),
       spec_check: agentResultSchema.optional().describe('Результат spec check'),
-      codex_review: agentResultSchema.optional().describe('Результат Codex adversarial review (codex -q --model o3)'),
     },
     async (args) => {
       try {
-        const input = (args.code_review || args.security_check || args.spec_check || args.codex_review)
+        const input = (args.code_review || args.security_check || args.spec_check)
           ? {
             code_review: args.code_review,
             security_check: args.security_check,
             spec_check: args.spec_check,
-            codex_review: args.codex_review,
           }
           : undefined
         return jsonResult(verifyChecker.check(input))

@@ -252,11 +252,6 @@ export class PhaseEngine {
         ? 'ДЕЙСТВИЕ: Verify пройден → phase_advance'
         : 'ДЕЙСТВИЕ: Запусти ПАРАЛЛЕЛЬНО: @code-reviewer + @security-guard → verify_checklist с результатами → phase_advance',
       commit: 'ДЕЙСТВИЕ: git commit → phase_advance',
-      // SCD-Debate pipeline
-      setup: 'ДЕЙСТВИЕ: Подготовь тему и контекст дебатов → phase_advance',
-      'round-gpt': 'ДЕЙСТВИЕ: Запусти GPT раунд через codex exec → phase_advance',
-      'round-claude': 'ДЕЙСТВИЕ: Напиши ответ Claude на раунд GPT → phase_advance',
-      decision: 'ДЕЙСТВИЕ: Арбитр принимает решение → phase_advance',
     }
     return actions[phase] ?? null
   }

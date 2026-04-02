@@ -17,21 +17,9 @@ const STC_PIPELINE: PipelineConfig = {
   ],
 }
 
-/** SCD-Debate pipeline — раунды дебатов */
-const SCD_DEBATE_PIPELINE: PipelineConfig = {
-  name: 'scd-debate',
-  phases: [
-    { name: 'setup', required: true },
-    { name: 'round-gpt', required: true },
-    { name: 'round-claude', required: true },
-    { name: 'decision', terminal: true },
-  ],
-}
-
 /** Все встроенные pipelines */
 const DEFAULT_PIPELINES: Record<string, PipelineConfig> = {
   'stc': STC_PIPELINE,
-  'scd-debate': SCD_DEBATE_PIPELINE,
 }
 
 /** Дефолтный конфиг guardian (immutable в runtime через Object.freeze) */

@@ -57,7 +57,6 @@ export interface VerifyCheckInput {
   code_review?: AgentCheckResult
   security_check?: AgentCheckResult
   spec_check?: AgentCheckResult
-  codex_review?: AgentCheckResult
 }
 
 /** Состояние одной фичи */

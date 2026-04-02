@@ -87,16 +87,11 @@ verify_checklist(...)   → submit review results before commit
 
 ## Custom pipelines
 
-### Built-in pipelines
+### Built-in pipeline
 
 **`stc`** (default) — full development cycle:
 ```
 specify → clarify → plan → test → code → verify → commit
-```
-
-**`scd-debate`** — AI debate rounds:
-```
-setup → round-gpt → round-claude → decision
 ```
 
 ### Define your own
@@ -137,10 +132,10 @@ pipeline:
 
 For multi-step features, set steps with `step_set`. When the terminal phase completes, the pipeline resets to the first required phase (e.g., `test`) for the next step — until all steps are done.
 
-### Register with a specific pipeline
+### Register with a custom pipeline
 
 ```
-feature_register(name: "my-debate", pipeline: "scd-debate")
+feature_register(name: "my-feature", pipeline: "my-workflow")
 ```
 
 ## Key concepts

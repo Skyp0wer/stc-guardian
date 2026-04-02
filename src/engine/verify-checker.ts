@@ -45,10 +45,6 @@ export class VerifyChecker {
       this.checkAgent('spec_check', input.spec_check, failed, warnings)
     }
 
-    if (input?.codex_review) {
-      this.checkAgent('codex_review', input.codex_review, failed, warnings)
-    }
-
     const ready = missing.length === 0 && failed.length === 0
 
     // Set verify_passed в state
