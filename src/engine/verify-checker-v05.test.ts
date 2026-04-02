@@ -11,6 +11,7 @@ function createFeature(overrides?: Partial<FeatureState>): FeatureState {
   return {
     spec_path: null,
     registration_source: 'registered_explicitly',
+    pipeline: 'stc',
     current_phase: 'verify',
     current_step: 0,
     total_steps: 0,
@@ -31,6 +32,10 @@ function setup() {
   return { stateManager, checker, tmpDir }
 }
 
+const PASSED_REVIEW = { status: 'passed' as const, summary: 'Проверено 5 файлов, багов не найдено' }
+const FAILED_REVIEW = { status: 'failed' as const, summary: 'Найдена SQL инъекция в handler.ts:45' }
+const NOTES_REVIEW = { status: 'passed_with_notes' as const, summary: 'Мелкие замечания по нейминг' }
+
 describe('v0.5: verify_checklist с agent results', () => {
   // TS-6: все passed
   it('все агенты passed → verify_passed = true (TS-6)', () => {
@@ -41,9 +46,9 @@ describe('v0.5: verify_checklist с agent results', () => {
     })
 
     const result = checker.check({
-      code_review: 'passed',
-      security_check: 'passed',
-      spec_check: 'passed',
+      code_review: PASSED_REVIEW,
+      security_check: PASSED_REVIEW,
+      spec_check: PASSED_REVIEW,
     })
 
     expect(result.ready).toBe(true)
@@ -63,11 +68,11 @@ describe('v0.5: verify_checklist с agent results', () => {
     })
 
     const result = checker.check({
-      code_review: 'failed',
+      code_review: FAILED_REVIEW,
     })
 
     expect(result.ready).toBe(false)
-    expect(result.failed_checks).toContain('code_review: failed')
+    expect(result.failed_checks[0]).toContain('code_review: failed')
 
     const state = stateManager.getState()
     expect(state.features['feat'].verify_passed).toBe(false)
@@ -84,7 +89,7 @@ describe('v0.5: verify_checklist с agent results', () => {
     const result = checker.check()
 
     expect(result.ready).toBe(false)
-    expect(result.missing_evidence).toContain('code_review не предоставлен')
+    expect(result.missing_evidence[0]).toContain('code_review')
 
     const state = stateManager.getState()
     expect(state.features['feat'].verify_passed).toBe(false)
@@ -99,9 +104,9 @@ describe('v0.5: verify_checklist с agent results', () => {
     })
 
     const result = checker.check({
-      code_review: 'passed',
+      code_review: PASSED_REVIEW,
       security_check: { skipped: 'no deps changed' },
-      spec_check: 'passed',
+      spec_check: PASSED_REVIEW,
     })
 
     expect(result.ready).toBe(true)
@@ -119,13 +124,13 @@ describe('v0.5: verify_checklist с agent results', () => {
     })
 
     const result = checker.check({
-      code_review: 'passed_with_notes',
-      security_check: 'passed_with_notes',
-      spec_check: 'passed_with_notes',
+      code_review: NOTES_REVIEW,
+      security_check: NOTES_REVIEW,
+      spec_check: NOTES_REVIEW,
     })
 
     expect(result.ready).toBe(true)
-    expect(result.warnings).toHaveLength(3) // notes — warnings
+    expect(result.warnings).toHaveLength(3)
   })
 
   it('spec_check skip без причины → ошибка', () => {
@@ -136,11 +141,61 @@ describe('v0.5: verify_checklist с agent results', () => {
     })
 
     const result = checker.check({
-      code_review: 'passed',
+      code_review: PASSED_REVIEW,
       spec_check: { skipped: '' },
     })
 
     expect(result.ready).toBe(false)
     expect(result.failed_checks).toContain('spec_check: skip без причины')
+  })
+
+  // NEW: summary обязателен
+  it('code_review без summary → failed', () => {
+    const { stateManager, checker } = setup()
+    stateManager.updateState(s => {
+      s.features['feat'] = createFeature()
+      s.active_feature = 'feat'
+    })
+
+    const result = checker.check({
+      code_review: { status: 'passed', summary: '' },
+    })
+
+    expect(result.ready).toBe(false)
+    expect(result.failed_checks[0]).toContain('summary')
+  })
+
+  // NEW: summary слишком короткий
+  it('code_review с коротким summary → failed', () => {
+    const { stateManager, checker } = setup()
+    stateManager.updateState(s => {
+      s.features['feat'] = createFeature()
+      s.active_feature = 'feat'
+    })
+
+    const result = checker.check({
+      code_review: { status: 'passed', summary: 'ok' },
+    })
+
+    expect(result.ready).toBe(false)
+    expect(result.failed_checks[0]).toContain('слишком короткий')
+  })
+
+  // NEW: таймстамп проверка
+  it('verify слишком быстро после code → warning', () => {
+    const { stateManager, checker } = setup()
+    stateManager.updateState(s => {
+      s.features['feat'] = createFeature({
+        code_completed_at: new Date().toISOString(), // только что
+      })
+      s.active_feature = 'feat'
+    })
+
+    const result = checker.check({
+      code_review: PASSED_REVIEW,
+    })
+
+    expect(result.ready).toBe(true) // warning, не блок
+    expect(result.warnings.some(w => w.includes('ПОДОЗРИТЕЛЬНО'))).toBe(true)
   })
 })

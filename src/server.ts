@@ -10,6 +10,7 @@ import { StepManager } from './engine/step-manager.js'
 import { SessionLog } from './engine/session-log.js'
 import { loadConfig } from './config/config-loader.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import type { VerifyCheckInput } from './state/types.js'
 
 function jsonResult(data: unknown): CallToolResult {
   return {
@@ -131,25 +132,28 @@ export function createGuardianServer(projectDir: string): McpServer {
 
   // --- verify_checklist ---
   const agentResultSchema = z.union([
-    z.enum(['passed', 'passed_with_notes', 'failed']),
+    z.object({
+      status: z.enum(['passed', 'passed_with_notes', 'failed']),
+      summary: z.string().min(1).describe('Краткое описание что проверялось и что найдено (мин. 20 символов)'),
+    }),
     z.object({ skipped: z.string().min(1) }),
   ])
 
   server.tool(
     'verify_checklist',
-    'Structured checklist перед commit-transition. Передайте результаты агентов (code_review обязателен)',
+    'Structured checklist перед commit-transition. Передайте результаты агентов с summary (code_review обязателен). НЕЛЬЗЯ просто "passed" — нужно описать что проверено.',
     {
-      code_review: agentResultSchema.optional().describe('Результат code review: passed | passed_with_notes | failed | { skipped: "причина" }'),
-      security_check: agentResultSchema.optional().describe('Результат security check'),
-      spec_check: agentResultSchema.optional().describe('Результат spec check'),
+      code_review: agentResultSchema.optional().describe('Результат code review: { status: "passed", summary: "что проверено" } | { skipped: "причина" }'),
+      security_check: agentResultSchema.optional().describe('Результат security check: { status: "passed", summary: "что проверено" }'),
+      spec_check: agentResultSchema.optional().describe('Результат spec check: { status: "passed", summary: "что проверено" }'),
     },
     async (args) => {
       try {
         const input = (args.code_review || args.security_check || args.spec_check)
           ? {
-            code_review: args.code_review,
-            security_check: args.security_check,
-            spec_check: args.spec_check,
+            code_review: args.code_review as VerifyCheckInput['code_review'],
+            security_check: args.security_check as VerifyCheckInput['security_check'],
+            spec_check: args.spec_check as VerifyCheckInput['spec_check'],
           }
           : undefined
         return jsonResult(verifyChecker.check(input))

@@ -45,14 +45,12 @@ export interface StepInfo {
   status: 'pending' | 'active' | 'done'
 }
 
-/** Результат отдельного agent check */
+/** Результат отдельного agent check (v1.1: требует summary) */
 export type AgentCheckResult =
-  | 'passed'
-  | 'passed_with_notes'
-  | 'failed'
+  | { status: 'passed' | 'passed_with_notes' | 'failed'; summary: string }
   | { skipped: string }
 
-/** Входные данные для verify_checklist v0.5 */
+/** Входные данные для verify_checklist v1.1 */
 export interface VerifyCheckInput {
   code_review?: AgentCheckResult
   security_check?: AgentCheckResult
@@ -70,6 +68,8 @@ export interface FeatureState {
   total_steps: number
   steps?: StepInfo[]
   verify_passed?: boolean
+  /** Timestamp когда code→verify произошёл (для anti-speedrun проверки) */
+  code_completed_at?: string
   phases_completed: string[]
   phases_skipped: Record<string, SkipInfo>
   phases_satisfied: Record<string, SatisfyInfo>

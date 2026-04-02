@@ -2,9 +2,15 @@ import type { StateManager } from '../state/state-manager.js'
 import type { AuditLogger } from '../logger/audit-logger.js'
 import type { GuardianConfig, VerifyResult, VerifyCheckInput, AgentCheckResult } from '../state/types.js'
 
+/** Минимальная длина summary для agent result (анти-враньё) */
+const MIN_SUMMARY_LENGTH = 20
+
+/** Минимум секунд между code→verify и verify_checklist (анти-спидран) */
+const MIN_VERIFY_DELAY_SEC = 30
+
 /**
  * Structured verify checklist перед commit-transition.
- * v0.5: agent results + hard gate (sets verify_passed).
+ * v1.1: summary обязателен, таймстамп проверка, анти-враньё.
  */
 export class VerifyChecker {
   constructor(
@@ -30,9 +36,23 @@ export class VerifyChecker {
     const failed: string[] = []
     const warnings: string[] = []
 
-    // Agent results check (v0.5)
+    // === A: Таймстамп проверка (анти-спидран) ===
+    if (feature.code_completed_at) {
+      const codeCompletedAt = new Date(feature.code_completed_at).getTime()
+      const now = Date.now()
+      const elapsedSec = (now - codeCompletedAt) / 1000
+
+      if (elapsedSec < MIN_VERIFY_DELAY_SEC) {
+        warnings.push(
+          `ПОДОЗРИТЕЛЬНО: verify_checklist через ${Math.round(elapsedSec)}с после code→verify. ` +
+          `Минимум ${MIN_VERIFY_DELAY_SEC}с нужно для реального ревью. Если ревью было до phase_advance — ок.`,
+        )
+      }
+    }
+
+    // === B: Agent results с обязательным summary ===
     if (!input || !input.code_review) {
-      missing.push('code_review не предоставлен')
+      missing.push('code_review не предоставлен — запусти @code-reviewer')
     } else {
       this.checkAgent('code_review', input.code_review, failed, warnings)
     }
@@ -54,7 +74,7 @@ export class VerifyChecker {
       f.updated_at = new Date().toISOString()
     })
 
-    // Audit log (v0.5)
+    // Audit log
     if (this.auditLogger) {
       this.auditLogger.log({
         timestamp: new Date().toISOString(),
@@ -83,7 +103,8 @@ export class VerifyChecker {
     failed: string[],
     warnings: string[],
   ): void {
-    if (typeof result === 'object' && 'skipped' in result) {
+    // Skipped
+    if ('skipped' in result) {
       if (!result.skipped || result.skipped.length === 0) {
         failed.push(`${name}: skip без причины`)
       } else {
@@ -92,14 +113,28 @@ export class VerifyChecker {
       return
     }
 
-    switch (result) {
+    // v1.1: summary обязателен
+    if (!('summary' in result) || !result.summary) {
+      failed.push(`${name}: summary обязателен — опиши что проверялось и что найдено`)
+      return
+    }
+
+    if (result.summary.length < MIN_SUMMARY_LENGTH) {
+      failed.push(
+        `${name}: summary слишком короткий (${result.summary.length} символов, мин. ${MIN_SUMMARY_LENGTH}). ` +
+        `Опиши что проверялось и результат.`,
+      )
+      return
+    }
+
+    switch (result.status) {
       case 'passed':
         break
       case 'passed_with_notes':
-        warnings.push(`${name}: passed with notes`)
+        warnings.push(`${name}: passed with notes — ${result.summary}`)
         break
       case 'failed':
-        failed.push(`${name}: failed`)
+        failed.push(`${name}: failed — ${result.summary}`)
         break
     }
   }

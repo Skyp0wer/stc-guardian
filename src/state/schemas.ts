@@ -28,6 +28,7 @@ export const FeatureStateSchema = z.object({
   total_steps: z.number().int().min(0),
   steps: z.array(StepInfoSchema).optional(),
   verify_passed: z.boolean().optional(),
+  code_completed_at: z.string().optional(),
   phases_completed: z.array(z.string()),
   phases_skipped: z.record(z.string(), SkipInfoSchema),
   phases_satisfied: z.record(z.string(), SatisfyInfoSchema),

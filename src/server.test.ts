@@ -177,7 +177,7 @@ describe('guardian MCP server', () => {
     const { client } = await setupServer(tmpDir)
     const result = await client.callTool({
       name: 'verify_checklist',
-      arguments: { code_review: 'passed', security_check: 'passed' },
+      arguments: { code_review: { status: 'passed', summary: 'Проверено 5 файлов, багов не найдено' }, security_check: { status: 'passed', summary: 'Секретов не найдено, deps чистые' } },
     })
     const parsed = JSON.parse((result.content as Array<{ text: string }>)[0].text)
 
@@ -365,7 +365,7 @@ describe('guardian MCP server', () => {
     // verify: сначала verify_checklist (hard gate v0.5)
     await client.callTool({
       name: 'verify_checklist',
-      arguments: { code_review: 'passed' },
+      arguments: { code_review: { status: 'passed', summary: 'E2E тест — код проверен, всё ок' } },
     })
     // verify → commit
     await client.callTool({ name: 'phase_advance', arguments: {} })

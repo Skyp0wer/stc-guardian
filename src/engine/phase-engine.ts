@@ -175,6 +175,11 @@ export class PhaseEngine {
       const f = s.features[featureName]
       f.phases_completed.push(currentPhase)
 
+      // Записываем timestamp code→verify для anti-speedrun проверки
+      if (currentPhase === 'code') {
+        f.code_completed_at = now
+      }
+
       if (isSkip) {
         f.phases_skipped[currentPhase] = { reason: params!.skip_reason!, at: now }
       }
